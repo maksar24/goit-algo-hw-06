@@ -1,6 +1,3 @@
-import networkx as nx
-
-
 connections_with_weights = [
     ("Bond Street", "Oxford Circus", 2),
     ("Bond Street", "Green Park", 4),
@@ -15,14 +12,35 @@ connections_with_weights = [
     ("Holborn", "Tottenham Court Road", 3),
 ]
 
-G = nx.Graph()
+graph = {}
 
-for station1, station2, weight in connections_with_weights:
-    G.add_edge(station1, station2, weight=weight)
+for u, v, weight in connections_with_weights:
+    graph.setdefault(u, {})[v] = weight
+    graph.setdefault(v, {})[u] = weight
 
-shortest_paths = nx.all_pairs_dijkstra_path_length(G)
+def dijkstra(graph, current):
+    distances = {vertex: float('infinity') for vertex in graph}
+    distances[current] = 0
+    unvisited = list(graph.keys())
+
+    while unvisited:
+        current_vertex = min(unvisited, key=lambda vertex: distances[vertex])
+
+        if distances[current_vertex] == float('infinity'):
+            break
+
+        for neighbor, weight in graph[current_vertex].items():
+            distance = distances[current_vertex] + weight
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+
+        unvisited.remove(current_vertex)
+
+    return distances
 
 print("Shortest paths (with weights) between all vertices:")
-for source, target_dict in shortest_paths:
-    for target, length in target_dict.items():
-        print(f"From {source} to {target}: {length}")
+
+for node in graph:
+    shortest = dijkstra(graph, node)
+    for target, length in shortest.items():
+        print(f"From {node} to {target}: {length}")

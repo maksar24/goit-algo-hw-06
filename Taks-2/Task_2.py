@@ -1,5 +1,5 @@
 import networkx as nx
-import matplotlib.pyplot as plt
+from collections import deque
 
 
 connections = [
@@ -22,22 +22,52 @@ G.add_edges_from(connections)
 start_station = "Bond Street"
 end_station = "Leicester Square"
 
-dfs_path = list(nx.dfs_edges(G, source=start_station))
-bfs_path = list(nx.bfs_edges(G, source=start_station))
-shortest = nx.shortest_path(G, source=start_station, target=end_station)
+def recursive_dfs(graph, current, target, visited=None, path=None):
+    if visited is None:
+        visited = set()
+    if path is None:
+        path = []
 
-def edge_list_to_node_path(edge_list, target):
-    path = [edge_list[0][0]]
-    for station1, station2 in edge_list:
-        path.append(station2)
-        if station2 == target:
-            break
-    return path
+    visited.add(current)
+    path.append(current)
 
-dfs_node_path = edge_list_to_node_path(dfs_path, end_station)
-bfs_node_path = edge_list_to_node_path(bfs_path, end_station)
+    if current == target:
+        return path
+
+    for neighbor in sorted(graph.neighbors(current)):
+        if neighbor not in visited:
+            result = recursive_dfs(graph, neighbor, target, visited, path)
+            if result:
+                return result
+
+    path.pop()
+    return None
+
+def recursive_bfs(graph, current, target, queue=None, visited=None):
+    if visited is None:
+        visited = set()
+    if queue is None:
+        queue = deque([(current, [current])])
+
+    if not queue:
+        return None
+
+    current, path = queue.popleft()
+
+    if current == target:
+        return path
+
+    visited.add(current)
+
+    for neighbor in sorted(graph.neighbors(current)):
+        if neighbor not in visited and neighbor not in [node for node, _ in queue]:
+            queue.append((neighbor, path + [neighbor]))
+
+    return recursive_bfs(graph, current, target, queue, visited)
+
+dfs_node_path = recursive_dfs(G, start_station, end_station)
+bfs_node_path = recursive_bfs(G, start_station, end_station)
 
 # Print results
 print("DFS Path from", start_station, "to", end_station, ":", dfs_node_path)
 print("BFS Path from", start_station, "to", end_station, ":", bfs_node_path)
-print("True Shortest Path:", shortest)
